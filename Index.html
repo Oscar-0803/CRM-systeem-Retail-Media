@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HEMA Retail Media CRM</title>
+<style>
+:root{--red:#e52329;--blue:#172b50;--bg:#f5f6f8;--line:#e4e7ed;--muted:#697586}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#243044;font:14px Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px 15px}
+button.primary{background:var(--red);color:white;font-weight:bold}
+button.secondary{background:#eef1f5;color:var(--blue)}
+button:hover{filter:brightness(.96)}
+input,select{padding:10px;border:1px solid #d9dee7;border-radius:7px;background:white;max-width:100%}
+aside{position:fixed;left:0;top:0;bottom:0;width:230px;background:var(--blue);color:white;padding:24px 15px}
+.logo{font-size:28px;font-weight:900;letter-spacing:-1px}
+.logo span{background:var(--red);padding:5px 9px;border-radius:5px}
+aside p{color:#bac6db;margin-bottom:35px}
+nav button{display:block;width:100%;text-align:left;background:transparent;color:#dce5f4;margin:5px 0}
+nav button.active,nav button:hover{background:#354b71;color:white}
+main{margin-left:230px;padding:28px;max-width:1700px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px}
+h1{font-size:27px;margin:0 0 7px}
+h2{font-size:19px;margin:0 0 15px}
+h3{font-size:15px}
+.muted{color:var(--muted)}
+.card,.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
+.kpi-label{color:var(--muted);font-size:13px}
+.kpi-value{font-size:27px;font-weight:800;margin:12px 0}
+.kpi-foot{font-size:12px;color:#667}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:20px}
+.panel{margin-bottom:18px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.toolbar input{min-width:200px;flex:1}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-size:12px;background:#fafbfc}
+.tablewrap{overflow-x:auto}
+.tag{display:inline-block;padding:6px 9px;border-radius:20px;background:#eef2f7;font-size:12px}
+.tag.signed{background:#e4f6eb;color:#167744}
+.tag.offer{background:#fff1d9;color:#986200}
+.tag.lead{background:#e9efff;color:#315aaf}
+.barline{display:flex;align-items:center;gap:8px;margin:14px 0}
+.barlabel{width:85px;color:var(--muted);font-size:12px}
+.bartrack{flex:1;background:#eef1f5;height:20px;border-radius:5px;display:flex;overflow:hidden}
+.bar{height:100%;min-width:0}
+.signedbar{background:#25a66a}
+.offerbar{background:#f0ad36}
+.leadbar{background:#6d8fe8}
+.barvalue{width:100px;text-align:right;font-size:12px}
+.modalbg{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:15px;z-index:10}
+.modal{background:white;border-radius:13px;padding:25px;width:100%;max-width:600px;max-height:90vh;overflow:auto}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.formgrid label{display:flex;flex-direction:column;gap:7px}
+.formgrid .wide{grid-column:1/-1}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.notice{padding:12px;background:#fff4dd;border-radius:8px;margin-bottom:15px}
+.statline{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:12px 0}
+.small{font-size:12px}
+.hidden{display:none!important}
+@media(max-width:950px){aside{position:static;width:100%}nav{display:flex;overflow:auto}nav button{white-space:nowrap}main{margin:0;padding:15px}.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:550px){.kpis{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.formgrid .wide{grid-column:1}header{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+
+<aside>
+ <div class="logo"><span>HEMA</span></div>
+ <p>Retail Media CRM</p>
+ <nav id="navigation">
+  <button data-page="dashboard" class="active">◫ Dashboard</button>
+  <button data-page="deals">◇ Deals & pipeline</button>
+  <button data-page="clients">▣ Klanten</button>
+  <button data-page="revenue">▥ Omzetrapportage</button>
+  <button data-page="periods">▦ HEMA-periodes</button>
+  <button data-page="stakeholders">◉ Stakeholders</button>
+ </nav>
+ <p class="small">Interactieve demo · fictieve gegevens</p>
+</aside>
+
+<main>
+ <header>
+  <div>
+   <h1 id="pageTitle">Dashboard</h1>
+   <div class="muted">Retail media. Alle kansen en omzet op één plek.</div>
+  </div>
+  <button class="primary" id="newDeal">+ Nieuwe deal</button>
+ </header>
+ <div id="app"></div>
+</main>
+
+<div id="modalRoot"></div>
+
+<script>
+"use strict";
+
+// Alle gegevens zijn fictief.
+// De demo bewaart wijzigingen alleen in deze browsersessie.
+const owners=["Sanne","Daan","Noor","Milan","Lotte","Jules","Robin"];
+const stages=[
+ "Lead","Eerste gesprek","Voorstel verstuurd",
+ "Onderhandeling","Akkoord","Campagne live",
+ "Evaluatie","Verloren","On hold"
+];
+const probabilities=[15,30,50,75,100,100,100,0,10];
+
+const initialClients=[
+ {id:1,name:"Studio Nova",type:"Merk",category:"Wonen",owner:"Sanne"},
+ {id:2,name:"Bloom & Co",type:"Merk",category:"Beauty",owner:"Noor"},
+ {id:3,name:"Bright Agency",type:"Bureau",category:"Multi-category",owner:"Daan"},
+ {id:4,name:"Freshday",type:"Merk",category:"Food",owner:"Milan"},
+ {id:5,name:"Little Wonder",type:"Merk",category:"Kids",owner:"Lotte"},
+ {id:6,name:"Pixel Partners",type:"Bureau",category:"Multi-category",owner:"Jules"},
+ {id:7,name:"Nordic Home",type:"Merk",category:"Wonen",owner:"Robin"}
+];
+
+const initialDeals=[
+ {id:1,clientId:1,name:"Winter wonen",stage:"Akkoord",amount:64000,start:"2026-10-15",end:"2026-12-31",owner:"Sanne",chance:100},
+ {id:2,clientId:2,name:"Beauty cadeauweken",stage:"Campagne live",amount:42000,start:"2026-10-01",end:"2026-11-30",owner:"Noor",chance:100},
+ {id:3,clientId:3,name:"Q4 omnichannel",stage:"Voorstel verstuurd",amount:88000,start:"2026-11-01",end:"2027-01-31",owner:"Daan",chance:50},
+ {id:4,clientId:4,name:"Feestdagen activatie",stage:"Onderhandeling",amount:36000,start:"2026-11-15",end:"2026-12-26",owner:"Milan",chance:75},
+ {id:5,clientId:5,name:"Speelgoed topselectie",stage:"Akkoord",amount:53000,start:"2026-11-01",end:"2026-12-31",owner:"Lotte",chance:100,manual:{"2026-11":19000,"2026-12":34000}},
+ {id:6,clientId:6,name:"Voorjaar inspiratie",stage:"Lead",amount:75000,start:"2027-02-01",end:"2027-04-30",owner:"Jules",chance:15},
+ {id:7,clientId:7,name:"Nieuwe collectie",stage:"Eerste gesprek",amount:28000,start:"2027-01-01",end:"2027-02-28",owner:"Robin",chance:30},
+ {id:8,clientId:2,name:"Always-on zichtbaarheid",stage:"Evaluatie",amount:24000,start:"2026-09-01",end:"2026-10-31",owner:"Noor",chance:100}
+];
+
+let clients=structuredClone(initialClients);
+let deals=structuredClone(initialDeals);
+let periods=[];
+let page="dashboard";
+let view="month";
+let filters={search:"",owner:"",stage:"",category:"",time:""};
+let lastUpdate=new Date();
+
+const euro=n=>new Intl.NumberFormat("nl-NL",{
+ style:"currency",currency:"EUR",maximumFractionDigits:0
+}).format(n);
+
+const exact=n=>new Intl.NumberFormat("nl-NL",{
+ style:"currency",currency:"EUR",minimumFractionDigits:2
+}).format(n);
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+})[c]);
+
+const date=s=>new Date(s+"T00:00:00Z");
+const iso=d=>d.toISOString().slice(0,10);
+const DAY=86400000;
+const client=id=>clients.find(c=>c.id===Number(id));
+const bucket=stage=>["Akkoord","Campagne live","Evaluatie"].includes(stage)
+ ?"signed":["Voorstel verstuurd","Onderhandeling"].includes(stage)
+ ?"offer":["Lead","Eerste gesprek"].includes(stage)?"lead":null;
+const touch=()=>lastUpdate=new Date();
+const options=(items,selected="")=>items.map(v=>
+ `<option value="${esc(v)}" ${v===selected?"selected":""}>${esc(v)}</option>`
+).join("");
+const field=(name,type="text",value="",extra="")=>
+ `<input name="${name}" type="${type}" value="${esc(value)}" ${extra}>`;
+
+// Verdeel een deal over alle campagnedagen.
+// Reken in centen zodat het totaal exact blijft.
+function allocate(deal){
+ if(!deal.start||!deal.end||deal.end<deal.start)return [];
+ const start=date(deal.start).getTime();
+ const end=date(deal.end).getTime();
+ const days=Math.round((end-start)/DAY)+1;
+ if(days>3650)return [];
+ const counts={};
+ for(let t=start;t<=end;t+=DAY){
+  const key=iso(new Date(t)).slice(0,7);
+  counts[key]=(counts[key]||0)+1;
+ }
+ const keys=Object.keys(counts).sort();
+ const total=Math.round(deal.amount*100);
+ let used=0;
+ return keys.map((key,i)=>{
+  const cents=deal.manual
+   ?Math.round((deal.manual[key]||0)*100)
+   :i===keys.length-1
+    ?total-used
+    :Math.round(total*counts[key]/days);
+  used+=cents;
+  return {deal,key,cents,source:deal.manual?"Handmatig":"Looptijd"};
+ });
+}
+
+// HEMA-periodes zijn configureerbaar.
+// Er worden geen officiële grenzen aangenomen.
+function periodRows(rows){
+ const result=[];
+ for(const row of rows){
+  const [year,month]=row.key.split("-").map(Number);
+  const monthStart=Date.UTC(year,month-1,1);
+  const monthEnd=Date.UTC(year,month,0);
+  const start=Math.max(date(row.deal.start).getTime(),monthStart);
+  const end=Math.min(date(row.deal.end).getTime(),monthEnd);
+  const days=Math.round((end-start)/DAY)+1;
+  if(days<=0)continue;
+  const matches=periods.map(p=>{
+   const a=Math.max(start,date(p.start).getTime());
+   const b=Math.min(end,date(p.end).getTime());
+   return {key:p.id,days:b>=a?Math.round((b-a)/DAY)+1:0};
+  }).filter(p=>p.days>0);
+  const covered=matches.reduce((n,p)=>n+p.days,0);
+  let used=0;
+  matches.forEach((p,i)=>{
+   const cents=i===matches.length-1&&covered===days
+    ?row.cents-used
+    :Math.round(row.cents*p.days/days);
+   used+=cents;
+   result.push({...row,key:p.key,cents});
+  });
+ }
+ return result;
+}
+
+function selectedDeals(){
+ return deals.filter(d=>{
+  const c=client(d.clientId);
+  if(filters.search&&!`${d.name} ${c?.name||""}`.toLowerCase()
+    .includes(filters.search.toLowerCase()))return false;
+  if(filters.owner&&d.owner!==filters.owner)return false;
+  if(filters.stage&&d.stage!==filters.stage)return false;
+  if(filters.category&&c?.category!==filters.category)return false;
+  if(filters.time){
+   const rows=view==="month"?allocate(d):periodRows(allocate(d));
+   if(!rows.some(r=>r.key===filters.time))return false;
+  }
+  return true;
+ });
+}
+
+function allRows(){
+ const rows=selectedDeals().flatMap(allocate);
+ return view==="month"?rows:periodRows(rows);
+}
+
+function summary(){
+ const rows=allRows();
+ const sum=(type)=>rows.filter(r=>bucket(r.deal.stage)===type)
+  .reduce((n,r)=>n+r.cents,0)/100;
+ return {
+  signed:sum("signed"),
+  offer:sum("offer"),
+  lead:sum("lead"),
+  weighted:rows.filter(r=>bucket(r.deal.stage)==="offer")
+   .reduce((n,r)=>n+r.cents*r.deal.chance/100,0)/100,
+  manual:rows.filter(r=>r.source==="Handmatig"&&bucket(r.deal.stage))
+   .reduce((n,r)=>n+r.cents,0)/100
+ };
+}
+
+function report(){
+ const rows=allRows();
+ const keys=[...new Set(rows.map(r=>r.key))].sort();
+ return keys.map(key=>{
+  const items=rows.filter(r=>r.key===key);
+  const sum=type=>items.filter(r=>bucket(r.deal.stage)===type)
+   .reduce((n,r)=>n+r.cents,0)/100;
+  return {
+   key,signed:sum("signed"),offer:sum("offer"),lead:sum("lead"),
+   weighted:items.filter(r=>bucket(r.deal.stage)==="offer")
+    .reduce((n,r)=>n+r.cents*r.deal.chance/100,0)/100
+  };
+ });
+}
+
+function kpis(){
+ const s=summary();
+ return `<div class="kpis">
+  ${[
+   ["Getekende omzet",s.signed,"Zeker · akkoord en live"],
+   ["Offertes uitstaand",s.offer,"Nog niet getekend"],
+   ["Gewogen offertes",s.weighted,"Op basis van kans"],
+   ["Leadpipeline",s.lead,"Vroege kansen"]
+  ].map(x=>`<div class="card">
+   <div class="kpi-label">${x[0]}</div>
+   <div class="kpi-value">${euro(x[1])}</div>
+   <div class="kpi-foot">${x[2]}</div>
+  </div>`).join("")}
+ </div>`;
+}
+
+function graph(){
+ const data=report();
+ if(!data.length)return `<div class="panel">Geen geplande omzet voor deze selectie.</div>`;
+ const max=Math.max(...data.map(r=>r.signed+r.offer+r.lead),1);
+ return `<div class="panel">
+  <h2>Omzetfasering per ${view==="month"?"maand":"HEMA-periode"}</h2>
+  <div class="small muted">■ Groen: getekend &nbsp; ■ Geel: offertes &nbsp; ■ Blauw: leads</div>
+  ${data.map(r=>{
+   const total=r.signed+r.offer+r.lead;
+   return `<div class="barline">
+    <div class="barlabel">${esc(r.key)}</div>
+    <div class="bartrack">
+     <div class="bar signedbar" style="width:${r.signed/max*100}%"></div>
+     <div class="bar offerbar" style="width:${r.offer/max*100}%"></div>
+     <div class="bar leadbar" style="width:${r.lead/max*100}%"></div>
+    </div>
+    <div class="barvalue">${euro(total)}</div>
+   </div>`;
+  }).join("")}
+ </div>`;
+}
+
+function revenueTable(){
+ const rows=report();
+ return `<div class="panel">
+  <h2>Omzet per ${view==="month"?"maand":"periode"}</h2>
+  <div class="tablewrap"><table>
+  <thead><tr><th>Periode</th><th>Getekend</th><th>Offertes</th>
+  <th>Gewogen offertes</th><th>Leads</th></tr></thead>
+  <tbody>${rows.map(r=>`<tr>
+   <td>${esc(r.key)}</td><td>${euro(r.signed)}</td>
+   <td>${euro(r.offer)}</td><td>${euro(r.weighted)}</td>
+   <td>${euro(r.lead)}</td></tr>`).join("")}</tbody>
+  </table></div>
+  ${!rows.length?'<p class="muted">Nog geen omzetregels beschikbaar.</p>':""}
+ </div>`;
+}
+
+function filtersHtml(){
+ const categories=[...new Set(clients.map(c=>c.category))].sort();
+ const times=view==="month"
+  ?[...new Set(deals.flatMap(d=>allocate(d).map(r=>r.key)))].sort()
+  :periods.map(p=>p.id);
+ return `<div class="toolbar">
+  <input id="search" placeholder="Zoek klant of deal..." value="${esc(filters.search)}">
+  <select id="owner"><option value="">Alle eigenaren</option>${options(owners,filters.owner)}</select>
+  <select id="stage"><option value="">Alle fases</option>${options(stages,filters.stage)}</select>
+  <select id="category"><option value="">Alle categorieën</option>${options(categories,filters.category)}</select>
+  <select id="time"><option value="">Alle periodes</option>${options(times,filters.time)}</select>
+  <button class="secondary" id="resetFilters">Wis filters</button>
+ </div>`;
+}
+
+function axisHtml(){
+ return `<div class="toolbar">
+  <button class="${view==="month"?"primary":"secondary"}" data-axis="month">Maanden</button>
+  <button class="${view==="period"?"primary":"secondary"}" data-axis="period">HEMA P1–P12</button>
+ </div>`;
+}
+
+function quality(){
+ const s=summary();
+ const total=s.signed+s.offer+s.lead;
+ return `<div class="panel">
+  <h2>Datakwaliteit</h2>
+  <div class="statline"><span>Deals zonder looptijd</span>
+   <b>${selectedDeals().filter(d=>!d.start||!d.end).length}</b></div>
+  <div class="statline"><span>Handmatig verdeeld</span>
+   <b>${total?(s.manual/total*100).toFixed(1):0}%</b></div>
+  <div class="statline"><span>HEMA-periodes</span><b>${periods.length}</b></div>
+  <div class="statline"><span>Laatst gewijzigd</span>
+   <b>${lastUpdate.toLocaleString("nl-NL")}</b></div>
+ </div>`;
+}
+
+function dealsHtml(){
+ const items=selectedDeals();
+ return `<div class="panel">
+  <h2>Deals (${items.length})</h2>
+  <div class="tablewrap"><table><thead><tr>
+   <th>Deal</th><th>Klant</th><th>Fase</th><th>Bedrag</th>
+   <th>Kans</th><th>Looptijd</th><th>Eigenaar</th><th>Verdeling</th><th></th>
+  </tr></thead><tbody>
+  ${items.map(d=>`<tr>
+   <td><b>${esc(d.name)}</b></td>
+   <td>${esc(client(d.clientId)?.name)}</td>
+   <td><select data-stage-id="${d.id}">
+    ${options(stages,d.stage)}</select></td>
+   <td>${euro(d.amount)}</td><td>${d.chance}%</td>
+   <td>${d.start?`${d.start} – ${d.end}`:"Niet gepland"}</td>
+   <td>${esc(d.owner)}</td>
+   <td><button class="secondary" data-manual="${d.id}">
+    ${d.manual?"Handmatig":"Automatisch"}</button></td>
+   <td><button class="secondary" data-edit="${d.id}">Bewerk</button></td>
+  </tr>`).join("")}</tbody></table></div>
+  ${!items.length?'<p class="muted">Geen deals gevonden.</p>':""}
+ </div>`;
+}
+
+function clientsHtml(){
+ return `<div class="panel">
+  <div style="display:flex;justify-content:space-between">
+   <h2>Klanten (${clients.length})</h2>
+   <button class="primary" id="newClient">+ Klant</button>
+  </div>
+  <div class="tablewrap"><table><thead><tr>
+   <th>Bedrijf</th><th>Type</th><th>Categorie</th>
+   <th>Eigenaar</th><th>Deals</th></tr></thead><tbody>
+   ${clients.map(c=>`<tr>
+    <td><b>${esc(c.name)}</b></td><td>${esc(c.type)}</td>
+    <td>${esc(c.category)}</td><td>${esc(c.owner)}</td>
+    <td>${deals.filter(d=>d.clientId===c.id).length}</td>
+   </tr>`).join("")}
+  </tbody></table></div>
+ </div>`;
+}
+
+function periodsHtml(){
+ return `<div class="panel">
+  <h2>HEMA-periodekalender</h2>
+  <div class="notice">Vul de officiële HEMA-periodes in.
+  De demo verzint geen start- of einddatums.</div>
+  <button class="primary" id="newPeriod">+ Periode toevoegen</button>
+  <div class="tablewrap"><table><thead><tr>
+   <th>Periode</th><th>Start</th><th>Einde</th><th></th>
+  </tr></thead><tbody>
+   ${periods.map(p=>`<tr><td>${esc(p.id)}</td>
+    <td>${p.start}</td><td>${p.end}</td>
+    <td><button class="secondary" data-remove-period="${esc(p.id)}">Verwijder</button></td>
+   </tr>`).join("")}
+  </tbody></table></div>
+ </div>`;
+}
+
+function render(){
+ document.getElementById("pageTitle").textContent={
+  dashboard:"Dashboard",deals:"Deals & pipeline",
+  clients:"Klanten",revenue:"Omzetrapportage",
+  periods:"HEMA-periodes",stakeholders:"Stakeholders"
+ }[page];
+ document.querySelectorAll("[data-page]").forEach(b=>
+  b.classList.toggle("active",b.dataset.page===page));
+ const app=document.getElementById("app");
+ const filtersBlock=filtersHtml();
+ if(page==="dashboard"){
+  app.innerHTML=filtersBlock+kpis()+axisHtml()+
+   `<div class="grid2"><div>${graph()}</div><div>${quality()}</div></div>`+
+   revenueTable();
+ }else if(page==="deals"){
+  app.innerHTML=filtersBlock+dealsHtml();
+ }else if(page==="clients"){
+  app.innerHTML=clientsHtml();
+ }else if(page==="revenue"){
+  app.innerHTML=axisHtml()+filtersBlock+kpis()+graph()+revenueTable()+quality();
+ }else if(page==="periods"){
+  app.innerHTML=periodsHtml();
+ }else{
+  app.innerHTML=`<div class="notice">
+   Alleen-lezen voorbeeld. Deze demo heeft nog geen echte toegangsbeveiliging.
+   Er worden geen contactpersonen getoond.</div>`+
+   axisHtml()+kpis()+graph()+revenueTable()+quality();
+ }
+ if(view==="period"&&!periods.length&&
+  ["dashboard","revenue","stakeholders"].includes(page)){
+  app.insertAdjacentHTML("afterbegin",
+   '<div class="notice">Stel eerst de officiële HEMA-periodekalender in.</div>');
+ }
+ bind();
+}
+
+function bind(){
+ document.querySelectorAll("[data-axis]").forEach(b=>b.onclick=()=>{
+  view=b.dataset.axis;filters.time="";render();
+ });
+ for(const key of ["search","owner","stage","category","time"]){
+  const el=document.getElementById(key);
+  if(el)el.onchange=()=>{
+   filters[key]=el.value;render();
+  };
+ }
+ const reset=document.getElementById("resetFilters");
+ if(reset)reset.onclick=()=>{
+  filters={search:"",owner:"",stage:"",category:"",time:""};
+  render();
+ };
+ const newClient=document.getElementById("newClient");
+ if(newClient)newClient.onclick=()=>clientModal();
+ const newPeriod=document.getElementById("newPeriod");
+ if(newPeriod)newPeriod.onclick=()=>periodModal();
+ document.querySelectorAll("[data-edit]").forEach(b=>
+  b.onclick=()=>dealModal(Number(b.dataset.edit)));
+ document.querySelectorAll("[data-manual]").forEach(b=>
+  b.onclick=()=>manualModal(Number(b.dataset.manual)));
+ document.querySelectorAll("[data-stage-id]").forEach(el=>
+  el.onchange=()=>{
+   const d=deals.find(x=>x.id===Number(el.dataset.stageId));
+   const next=el.value;
+   if(next==="Verloren"){
+    const reason=prompt("Waarom is deze deal verloren?");
+    if(!reason?.trim()){render();return;}
+    d.lostReason=reason.trim();
+   }
+   d.stage=next;
+   d.chance=probabilities[stages.indexOf(next)];
+   touch();render();
+  });
+ document.querySelectorAll("[data-remove-period]").forEach(b=>
+  b.onclick=()=>{
+   periods=periods.filter(p=>p.id!==b.dataset.removePeriod);
+   touch();render();
+  });
+}
+
+function openModal(html){
+ document.getElementById("modalRoot").innerHTML=
+ `<div class="modalbg"><div class="modal">${html}</div></div>`;
+ document.querySelector(".modalbg").onclick=e=>{
+  if(e.target.classList.contains("modalbg"))closeModal();
+ };
+}
+function closeModal(){
+ document.getElementById("modalRoot").innerHTML="";
+}
+function modalActions(label){
+ return `<div class="actions">
+  <button type="button" class="secondary" id="cancel">Annuleren</button>
+  <button type="submit" class="primary">${label}</button>
+ </div>`;
+}
+function wireCancel(){
+ document.getElementById("cancel").onclick=closeModal;
+}
+function dealModal(id=null){
+ const d=deals.find(x=>x.id===id)||{
+  clientId:"",name:"",stage:"Lead",amount:"",start:"",
+  end:"",owner:owners[0],chance:15,lostReason:""
+ };
+ openModal(`<h2>${id?"Deal bewerken":"Nieuwe deal"}</h2>
+ <form id="dealForm">
+ <div class="formgrid">
+  <label class="wide">Klant<select name="clientId" required>
+   <option value="">Kies klant</option>
+   ${clients.map(c=>`<option value="${c.id}" ${d.clientId===c.id?"selected":""}>
+    ${esc(c.name)}</option>`).join("")}</select></label>
+  <label class="wide">Dealnaam${field("name","text",d.name,"required")}</label>
+  <label>Fase<select name="stage" id="dealStage">
+   ${options(stages,d.stage)}</select></label>
+  <label>Eigenaar<select name="owner">${options(owners,d.owner)}</select></label>
+  <label>Bedrag (€)${field("amount","number",d.amount,'min="0.01" step="0.01" required')}</label>
+  <label>Kans (%)${field("chance","number",d.chance,'min="0" max="100" required')}</label>
+  <label>Startdatum${field("start","date",d.start)}</label>
+  <label>Einddatum${field("end","date",d.end)}</label>
+  <label class="wide">Reden verloren (verplicht bij Verloren)
+   ${field("lostReason","text",d.lostReason||"")}</label>
+ </div>${modalActions("Deal opslaan")}</form>`);
+ wireCancel();
+ document.getElementById("dealStage").onchange=e=>{
+  document.querySelector('[name="chance"]').value=
+   probabilities[stages.indexOf(e.target.value)];
+ };
+ document.getElementById("dealForm").onsubmit=e=>{
+  e.preventDefault();
+  const f=Object.fromEntries(new FormData(e.target));
+  const amount=Number(f.amount),chance=Number(f.chance);
+  if(!Number.isFinite(amount)||amount<=0||chance<0||chance>100){
+   alert("Controleer bedrag en kans.");return;
+  }
+  if((f.start&&!f.end)||(!f.start&&f.end)||
+   (f.start&&f.end&&f.end<f.start)){
+   alert("Vul een geldige start- en einddatum in.");return;
+  }
+  if(f.stage==="Verloren"&&!f.lostReason.trim()){
+   alert("Vul een reden voor verloren in.");return;
+  }
+  const updated={
+   ...d,id:id||Date.now(),clientId:Number(f.clientId),
+   name:f.name.trim(),stage:f.stage,amount,start:f.start,end:f.end,
+   owner:f.owner,chance,lostReason:f.lostReason.trim()
+  };
+  if(id){
+   // Verwijder handmatige verdeling als bedrag of datums wijzigen.
+   if(amount!==d.amount||f.start!==d.start||f.end!==d.end)
+    delete updated.manual;
+   deals=deals.map(x=>x.id===id?updated:x);
+  }else deals.push(updated);
+  touch();closeModal();render();
+ };
+}
+
+function clientModal(){
+ openModal(`<h2>Nieuwe klant</h2><form id="clientForm">
+ <div class="formgrid">
+  <label class="wide">Bedrijfsnaam${field("name","text","","required")}</label>
+  <label>Type<select name="type"><option>Merk</option><option>Bureau</option></select></label>
+  <label>Categorie${field("category","text","","required")}</label>
+  <label class="wide">Eigenaar<select name="owner">${options(owners)}</select></label>
+ </div>${modalActions("Klant toevoegen")}</form>`);
+ wireCancel();
+ document.getElementById("clientForm").onsubmit=e=>{
+  e.preventDefault();
+  const f=Object.fromEntries(new FormData(e.target));
+  clients.push({...f,id:Date.now()});
+  touch();closeModal();render();
+ };
+}
+
+function periodModal(){
+ openModal(`<h2>HEMA-periode toevoegen</h2>
+ <form id="periodForm"><div class="formgrid">
+  <label class="wide">Periode-ID (bijv. 2026-P1)
+   ${field("id","text","","required pattern='[0-9]{4}-P([1-9]|1[0-2])'")}</label>
+  <label>Start${field("start","date","","required")}</label>
+  <label>Einde${field("end","date","","required")}</label>
+ </div>${modalActions("Periode opslaan")}</form>`);
+ wireCancel();
+ document.getElementById("periodForm").onsubmit=e=>{
+  e.preventDefault();
+  const p=Object.fromEntries(new FormData(e.target));
+  if(p.end<p.start){alert("Einddatum ligt voor startdatum.");return;}
+  if(periods.some(x=>x.id===p.id||
+   !(p.end<x.start||p.start>x.end))){
+   alert("Deze periode bestaat al of overlapt een andere periode.");return;
+  }
+  periods.push(p);
+  periods.sort((a,b)=>a.start.localeCompare(b.start));
+  touch();closeModal();render();
+ };
+}
+
+function manualModal(id){
+ const d=deals.find(x=>x.id===id);
+ const rows=allocate(d);
+ if(!rows.length){
+  alert("Voeg eerst een geldige campagnelooptijd toe.");return;
+ }
+ openModal(`<h2>Handmatige omzetverdeling</h2>
+ <p class="muted">${esc(d.name)} · totaal ${exact(d.amount)}</p>
+ <form id="manualForm"><div class="formgrid">
+  ${rows.map(r=>`<label>${r.key}
+   <input type="number" name="${r.key}" min="0" step="0.01"
+    value="${d.manual?d.manual[r.key]||0:(r.cents/100).toFixed(2)}" required>
+  </label>`).join("")}
+ </div>${modalActions("Verdeling opslaan")}</form>
+ <button class="secondary" id="autoReset">Herstel automatische verdeling</button>`);
+ wireCancel();
+ document.getElementById("autoReset").onclick=()=>{
+  delete d.manual;touch();closeModal();render();
+ };
+ document.getElementById("manualForm").onsubmit=e=>{
+  e.preventDefault();
+  const f=Object.fromEntries(new FormData(e.target));
+  const values=Object.values(f).map(Number);
+  const total=values.reduce((n,v)=>n+Math.round(v*100),0);
+  if(values.some(v=>!Number.isFinite(v)||v<0)||
+   total!==Math.round(d.amount*100)){
+   alert("De verdeling moet exact "+exact(d.amount)+" zijn.");return;
+  }
+  d.manual=Object.fromEntries(Object.entries(f).map(([k,v])=>[k,Number(v)]));
+  touch();closeModal();render();
+ };
+}
+
+document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>{
+ page=b.dataset.page;
+ filters={search:"",owner:"",stage:"",category:"",time:""};
+ render();
+});
+document.getElementById("newDeal").onclick=()=>dealModal();
+render();
+</script>
+</body>
+</html>
